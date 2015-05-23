@@ -8,5 +8,10 @@ julia:
 env:
   global:
     - BOND_TIMEOUT=5
+before_script:
+  # allow ssh loopback
+  - ssh-keygen -t rsa -N '' -C '' -f ~/.ssh/id_rsa
+  - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+  - ssh -o StrictHostKeyChecking=no localhost true
 after_success:
-   - if [ $TRAVIS_JULIA_VERSION = "nightly" ]; then julia -e "cd(Pkg.dir(${JL_PKG})); Pkg.add(\"Coverage\"); using Coverage; Coveralls.submit(Coveralls.process_folder())"; fi
+   - if [ $TRAVIS_JULIA_VERSION = "nightly" ]; then julia -e "cd(Pkg.dir(\"${JL_PKG}\")); Pkg.add(\"Coverage\"); using Coverage; Coveralls.submit(Coveralls.process_folder())"; fi
