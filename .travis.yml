@@ -1,0 +1,12 @@
+language: julia
+os:
+  - linux
+  - osx
+julia:
+  - release
+  - nightly
+env:
+  global:
+    - BOND_TIMEOUT=5
+after_success:
+   - if [ $TRAVIS_JULIA_VERSION = "nightly" ]; then julia -e "cd(Pkg.dir(${JL_PKG})); Pkg.add(\"Coverage\"); using Coverage; Coveralls.submit(Coveralls.process_folder())"; fi
