@@ -131,7 +131,7 @@ function bcall(bond::BondProc, name::String, args...)
     if !any(x->isa(x, BondRef), args)
         _sendstate(bond, "CALL", JSON.json((name, args)))
     else
-        args = [(Int(isa(arg, BondRef)), _code(bond, arg)) for arg in args]
+        args = [(@compat Int(isa(arg, BondRef)), _code(bond, arg)) for arg in args]
         _sendstate(bond, "XCALL", JSON.json((name, args)))
     end
     _repl(bond)
