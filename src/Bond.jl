@@ -106,7 +106,7 @@ function bref(bond::BondProc, code::String)
     BondRef(bond, code)
 end
 
-_code(bond::BondProc, code::String) = code
+_code(bond::BondProc, any) = any
 
 function _code(bond::BondProc, ref::BondRef)
     if bond === ref.bond
@@ -138,7 +138,7 @@ function bcall(bond::BondProc, name::String, args...)
 end
 
 function importfn(bond::BondProc, name::String)
-    (args...)->call(bond, name, args...)
+    (args...)->bcall(bond, name, args...)
 end
 
 function exportfn(bond::BondProc, func::Function, name::String=string(func))
