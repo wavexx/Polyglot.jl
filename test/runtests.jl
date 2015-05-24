@@ -1,29 +1,27 @@
-using Bond
-using Base.Test
-
-TIMEOUT = parse(Int, get(ENV, "BOND_TIMEOUT", "1"))
-
 # We assume all drivers are tested in the reference Python implementation.
 # As such, we only test one driver (Python) in order to cover the current host.
 
-# default cmd/args
-py = make_bond("Python"; timeout=TIMEOUT)
-ret = beval(py, "1")
-@assert ret == 1
-#close(py) # TODO: needs Expect 0.1.2
+dir = dirname(@__FILE__)
+tests = 0
+fails = 0
 
-# default args only
-py = make_bond("Python", `python`; timeout=TIMEOUT)
-ret = beval(py, "1")
-@assert ret == 1
+for f in readdir(dir)
+    m = match(r"^test_(.*)\.jl$", f)
+    fp = joinpath(dir, f)
+    if m === nothing || !isfile(fp)
+        continue
+    end
 
-# break the command without arguments
-@test_throws make_bond("Python", `ssh localhost python`, timeout=TIMEOUT, def_args=false)
+    tests = tests + 1
+    name = m.captures[1]
+    print("$name ... ")
+    try
+        evalfile(fp)
+        println("OK")
+    catch e
+        fails = fails + 1
+        println("FAIL: $e")
+    end
+end
 
-# check default arguments with custom cmd
-py = make_bond("Python", `ssh localhost python`, timeout=TIMEOUT)
-ret = beval(py, "1")
-@assert ret == 1
-
-# broken command
-@test_throws make_bond("Python", `false`; timeout=TIMEOUT)
+exit(fails != 0)

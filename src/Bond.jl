@@ -1,5 +1,6 @@
 module Bond
 export make_bond, beval, bcall, bref, importfn, exportfn, proxyfn
+export BondException, BondTerminatedException, BondRemoteException, BondSerializationException
 
 ## Imports
 using Base
@@ -47,12 +48,7 @@ end
 
 function _repl(bond::BondProc)
     while true
-        try
-            expect!(bond.proc, "\n")
-        catch e
-            isa(e, ExpectEOF) && break
-        end
-
+        expect!(bond.proc, "\n")
         cmd, args = @compat split(bond.proc.before, " ", limit=2)
         args = length(bond.proc.before) > 1? JSON.parse(args): []
 
@@ -195,7 +191,7 @@ function make_bond(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{S
 
     # find a suitable command
     proc = nothing
-    if cmd != nothing
+    if cmd !== nothing
         xargs = def_args? data["command"][1][2:end]: []
         cmd = `$(cmd.exec) $(xargs) $(args)`
         try
@@ -215,7 +211,7 @@ function make_bond(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{S
                 isa(e, Base.UVError) || rethrow(e)
             end
         end
-        if proc == nothing
+        if proc === nothing
             throw(BondException("no suitable interpreter found"))
         end
     end
