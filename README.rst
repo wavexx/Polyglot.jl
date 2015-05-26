@@ -1,0 +1,292 @@
+==================================================================================
+Bond.jl: transparent remote/recursive evaluation between Julia and other languages
+==================================================================================
+
+.. contents::
+
+The Julia module ``Bond`` supports transparent remote/recursive evaluation
+between Julia and another interpreter through automatic call serialization.
+
+In poorer words, a ``Bond`` lets you call functions in other languages as they
+were regular Julia functions. It *also* allows other languages to *call Julia
+functions* as if they were native.
+
+Remote output is also transparently redirected locally, and since the
+evaluation is performed through a persistent co-process, you can actually spawn
+interpreters on different hosts through "ssh" efficiently.
+
+``Bond`` currently supports PHP, Perl, JavaScript (Node.js) and Python.
+
+``Bond.jl`` is currently a work-in-progress and under-documented. The API is
+subject to change without notice. Suggestions about API design are highly
+appreciated. Extensive documentation with examples_, including details about
+`language support`_ can be found on Python's `bond module documentation`_,
+which uses the same underlying infrastructure. In particular, while ``Bond.jl``
+can be used with Python, is definitely not as sophisticated or as efficient as
+PyCall_ (although ``Bond`` can be used on remote Python processes and/or to
+seamlessy mix between Python 2/Python 3 code).
+
+.. _examples: http://www.thregr.org/~wavexx/software/python-bond/#a-concrete-example
+.. _language support: http://www.thregr.org/~wavexx/software/python-bond/#language-support
+.. _bond module documentation: http://www.thregr.org/~wavexx/software/python-bond/
+.. _PyCall: https://github.com/stevengj/PyCall.jl
+
+
+Overview
+========
+
+.. code:: jlcon
+
+  julia> # Let's bond with a PHP interpreter
+  julia> using Bond;
+  julia> php = make_bond("PHP");
+  julia> beval(php, "echo \"Hello world!\\n\""; block=true);
+  Hello world!
+
+  julia> # Make an expensive split function using PHP's explode
+  julia> explode = importfn(php, "explode");
+  julia> explode(" ", "Hello world splitted by PHP!")
+  5-element Array{Any,1}:
+   "Hello"
+   "world"
+   "splitted"
+   "by"
+   "PHP!"
+
+  julia> # Call Julia from PHP
+  julia> call_me() = println("Hi, this is Julia talking!");
+  julia> exportfn(php, call_me);
+  julia> beval(php, "call_me()");
+  Hi, this is Julia talking!
+
+  julia> # Bridge two worlds!
+  julia> perl = make_bond("Perl");
+  julia> proxyfn(php, "explode", perl);
+  julia> # note: explode is now available to Perl, but still executes in PHP
+  julia> beval(perl, "explode(\"=\", \"Mind=blown!\")")
+  2-element Array{Any,1}:
+   "Mind"  
+   "blown!"
+
+
+API
+===
+
+Initialization
+--------------
+
+Bonds can be constructed by using the ``make_bond()`` function:
+
+.. code:: julia
+
+  using Bond
+  interpreter = make_bond("language")
+
+The first argument should be the desired language name ("JavaScript", "PHP",
+"Perl", "Python"). The list of supported languages can be fetched dynamically
+using ``Bond.list_drivers()``.
+
+You can override the default interpreter command using the second argument,
+which allows to specify any regular command_ to be executed:
+
+.. code:: julia
+
+  using Bond
+  py = make_bond("Python", `ssh remote python3`)
+
+An additional *list* of arguments to the interpreter can be provided using the
+third argument, ``args``:
+
+.. code:: julia
+
+  using Bond
+  py = make_bond("Python", `ssh remote python3`, String["-E"; "-OO"])
+
+The *arguments*, as for the command, are automatically quoted.
+
+Some command line arguments may be supplied automatically by the driver to
+force an interactive shell; for example "-i" is supplied if Python is
+requested. You can disable default arguments by using ``def_args=False``.
+
+The following keyword arguments are supported:
+
+``cwd``:
+
+  Working directory for the interpreter (defaults to current working
+  directory).
+
+``env``:
+
+  Environment for the interpreter (defaults to ``ENV``).
+
+``def_args``:
+
+  Enable (default) or suppress default, extra command-line arguments to the
+  interpreter.
+
+``timeout``:
+
+  Defines the timeout for the underlying communication protocol. Note that
+  ``Bond`` cannot distinguish between a slow call or noise generated while the
+  interpreter is set up. Defaults to 60 seconds.
+
+``trans_except``:
+
+  .. warning:: Unimplemented
+
+  Enables/disables "transparent exceptions". Exceptions are always first class,
+  but when ``trans_except`` is enabled, the exception objects themselves will
+  be forwarded across the bond. If ``trans_except`` is disabled (the default
+  for all languages except Julia), then local exceptions will always contain a
+  string representation of the remote exception instead, which avoids
+  serialization errors.
+
+.. _command: http://julia.readthedocs.org/en/latest/manual/running-external-programs/
+
+
+``Bond`` functions
+------------------
+
+``beval(bond, code; block=false)``
+
+  With ``block=false`` (the default), evaluate and return the value of a
+  *single statement* of code in the interpreter.
+
+  With ``block=true`` instead, evaluate a code block inside the top-level of
+  the interpreter. Any construct which is legal by the current interpreter is
+  allowed. Nothing is returned.
+
+``bref(bond, code)``:
+
+  Return a reference to an *single, unevaluated statement* of code, which can
+  be later used in beval() or as an *immediate* argument to call(). See `Quoted
+  expressions`_.
+
+``close(bond)``:
+
+  Terminate the communication with the interpreter.
+
+``bcall(bond, name, args...)``:
+
+  Call a function "name" in the interpreter using the supplied list of
+  arguments \*args (apply \*args to a callable *statement* defined by "name").
+  The arguments are automatically converted to their other language's
+  counterpart. The return value is captured and converted back to Julia as
+  well.
+
+``importfn(bond, name)``:
+
+  Return a function that calls "name":
+
+  .. code:: julia
+
+    explode = importfn(bond, "explode")
+    # Now you can call explode as a normal, local function
+    explode(" ", "Hello world")
+
+``exportfn(bond, func, name)``:
+
+  Export a local function "func" so that can be called on the remote language
+  as "name". If "name" is not specified, use the local function name directly.
+  Note that "func" must be a local function, not a function name.
+
+``proxyfn(bond, name, other_bond, other_name)``:
+
+  Export a remote function "name" from the current ``bond`` to "other_bond",
+  named as "other_name". If "other_name" is not provided, the same value as
+  "name" is used.
+
+``interact()``:
+
+  .. warning:: Unimplemented
+
+  Start an interactive session with the underlying interpreter.
+
+
+Exceptions
+----------
+
+``BondException``:
+  Thrown during initialization or unrecoverable errors.
+
+``BondTerminatedException``:
+  Thrown when the bond exits unexpectedly.
+
+``BondSerializationException``:
+  Thrown when an object/exception which is sent *or* received cannot be
+  serialized by the current protocol. The ``remote`` record can be either
+  "local" (when attempting to *send*) or "remote" (when *receiving*). A
+  ``BondSerializationException`` is not fatal.
+
+``BondRemoteException``:
+  Thrown for uncaught remote exceptions. The "data" record contains either
+  the error message (with ``trans_except=False``) or the remote exception
+  itself (``trans_except=True``).
+
+Beware that both ``BondSerializationException`` (with ``remote==true``) and
+``BondRemoteException`` may actually be originating from uncaught *local*
+exceptions when an exported function is called. Pay attention to the error
+text/data in these cases, as it will contain several nested exceptions.
+
+
+Quoted expressions
+------------------
+
+``Bond`` has minimal support for quoted expressions, through the use of
+``bref()``. ``bref()`` returns a reference to a unevaluated statement that can
+be fed back to ``beval()`` or as an *immediate* (i.e.: not nested) argument to
+``bcall()``. References are bound to the interpreter that created them.
+
+``bref()`` allows to "call" methods that take remote un-serializable arguments,
+such as file descriptors, without the use of a support function and/or eval:
+
+.. code:: julia
+
+  pl = make_bond("Perl")
+  beval(pl, "open(\$fd, \">file.txt\");"; block=true)
+  fd = bref(pl, "\$fd")
+  bcall(pl, "syswrite", fd, "Hello world!")
+  bcall(pl, "close", fd)
+
+Since references cannot be nested, there are still cases where it might be
+necessary to use a support function. To demonstrate, we rewrite the above
+example without quoted expressions, while still allowing an argument ("Hello
+world!") to be local:
+
+.. code:: julia
+
+  pl = make_bond("Perl")
+  beval(pl, "open(\$fd, \">file.txt\");"; block=true)
+  beval(pl, "sub syswrite_fd { syswrite(\$fd, shift()); };", block=true)
+  bcall("syswrite_fd", "Hello world!")
+  beval("close(\$fd)")
+
+Or more succinctly:
+
+.. code:: julia
+
+  bcall(pl, "sub { syswrite(\$fd, shift()); }", "Hello world!")
+
+
+Language support
+================
+
+Please see http://www.thregr.org/~wavexx/software/python-bond/#language-support
+
+
+General/support mailing list
+============================
+
+If you are interested in announcements and development discussions about
+``Bond``, you can subscribe to the `bond-devel` mailing list by sending an
+empty email to <bond-devel+subscribe@thregr.org>.
+
+You can contact the main author directly at <wavexx@thregr.org>, though using
+the general list is encouraged.
+
+
+Authors and Copyright
+=====================
+
+| "Bond.jl" is distributed under the MIT license (see ``LICENSE.rst``).
+| Copyright(c) 2015 by wave++ "Yuri D'Elia" <wavexx@thregr.org>.
