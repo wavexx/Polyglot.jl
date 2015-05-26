@@ -22,8 +22,8 @@ subject to change without notice. Suggestions about API design are highly
 appreciated. Extensive documentation with examples_, including details about
 `language support`_ can be found on Python's `bond module documentation`_,
 which uses the same underlying infrastructure. In particular, while ``Bond.jl``
-can be used with Python, is definitely not as sophisticated or as efficient as
-PyCall_ (although ``Bond`` can be used on remote Python processes and/or to
+can be used with Python, it's definitely not as sophisticated or as efficient
+as PyCall_ (although ``Bond`` can be used on remote Python processes and/or to
 seamlessy mix between Python 2/Python 3 code).
 
 .. _examples: http://www.thregr.org/~wavexx/software/python-bond/#a-concrete-example
@@ -215,7 +215,7 @@ Exceptions
 ``BondSerializationException``:
   Thrown when an object/exception which is sent *or* received cannot be
   serialized by the current protocol. The ``remote`` record can be either
-  "local" (when attempting to *send*) or "remote" (when *receiving*). A
+  ``false`` (when attempting to *send*) or ``true`` (when *receiving*). A
   ``BondSerializationException`` is not fatal.
 
 ``BondRemoteException``:
