@@ -185,8 +185,15 @@ function query_driver(lang::String)
 end
 
 function list_drivers()
-    # TODO
-    error("Unimplemented")
+    drivers = String[]
+    root = joinpath(dirname(@__FILE__()), "drivers")
+    for file in readdir(root)
+        data_path = "$root/$file/bond.json"
+        if isfile(data_path)
+            push!(drivers, file)
+        end
+    end
+    return drivers
 end
 
 function _load_stage(lang::String, data::Dict)

@@ -1,5 +1,11 @@
 include("prelude.jl")
 
+# test capture itself
+output = capture_stdout() do
+    println("Hello world from Julia!")
+end
+@test output == "Hello world from Julia!\n"
+
 # test STDOUT redirection
 output = capture_stdout() do
     py = make_bond("Python"; timeout=TIMEOUT)

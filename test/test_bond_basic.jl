@@ -1,5 +1,9 @@
 include("prelude.jl")
 
+# list drivers
+drivers = Bond.list_drivers()
+@test "Python" in drivers
+
 # broken command
 @test_throws BondException make_bond("Python", `false`; timeout=TIMEOUT)
 
