@@ -21,3 +21,19 @@ macro catch_except(extype, expr)
         end
     end
 end
+
+
+function _capture_output(fun, fd, set_fd)
+    old = fd
+    rd, wr = set_fd()
+    try
+        fun()
+    finally
+        set_fd(old)
+        close(wr)
+    end
+    readall(rd)
+end
+
+capture_stdout(fun) = _capture_output(fun, STDOUT, redirect_stdout)
+capture_stderr(fun) = _capture_output(fun, STDERR, redirect_stderr)
