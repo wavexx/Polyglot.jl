@@ -165,7 +165,7 @@ function exportfn(bond::BondProc, func::Function, name::String=string(func))
 end
 
 function proxyfn(bond::BondProc, name::String, other_bond::BondProc, other_name::String=name)
-    exportfn(other_bond, callable(bond, name), other_name)
+    exportfn(other_bond, importfn(bond, name), other_name)
 end
 
 function interact(bond::BondProc)
