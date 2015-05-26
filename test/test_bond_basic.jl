@@ -11,7 +11,7 @@ drivers = Bond.list_drivers()
 py = make_bond("Python"; timeout=TIMEOUT)
 ret = beval(py, "1")
 @test ret == 1
-#close(py) # TODO: needs Expect 0.1.2
+close(py)
 
 # default args only
 py = make_bond("Python", `python`; timeout=TIMEOUT)
