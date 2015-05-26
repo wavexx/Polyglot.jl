@@ -33,3 +33,11 @@ exportfn(py, local_except)
 @catch_except BondRemoteException bcall(py, "local_except")
 @test beval(py, "1") === 1
 @test bond_stack_depth(py) == 1
+
+# depth after serialization error in exported function
+py = make_bond("Python", `python`; timeout=TIMEOUT)
+local_ser_except() = Base
+exportfn(py, local_ser_except)
+@catch_except BondSerializationException bcall(py, "local_ser_except")
+@test beval(py, "1") === 1
+@test bond_stack_depth(py) == 1
