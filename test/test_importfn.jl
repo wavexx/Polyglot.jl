@@ -5,7 +5,7 @@ py = make_bond("Python", `python`; timeout=TIMEOUT)
 # test importfn with a function without arguments
 beval(py, """def test_simple():
     return \"Hello world!\"
-"""; stm=false)
+"""; block=true)
 
 fn = importfn(py, "test_simple")
 ret = fn()
@@ -19,7 +19,7 @@ ret = fn("Hello world!")
 # empty return value
 beval(py, """def test_empty():
     pass
-"""; stm=false)
+"""; block=true)
 
 @test bcall(py, "test_empty") === nothing
 @test importfn(py, "test_empty")() === nothing

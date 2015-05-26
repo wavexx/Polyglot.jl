@@ -49,8 +49,9 @@ end
 function _repl(bond::BondProc)
     while true
         expect!(bond.proc, "\n")
-        cmd, args = @compat split(bond.proc.before, " ", limit=2)
-        args = length(bond.proc.before) > 1? _loads(bond.proto, args): []
+        ret = @compat split(bond.proc.before, " ", limit=2)
+        cmd = ret[1]
+        args = length(ret) > 1? _loads(bond.proto, ret[2]): []
 
         if cmd == "RETURN"
             return args
@@ -134,13 +135,13 @@ end
 
 
 ## Main functions
-function beval(bond::BondProc, code::String; stm=true)
-    _sendstate(bond, stm? "EVAL": "EVAL_BLOCK", _dumps(bond.proto, code))
+function beval(bond::BondProc, code::String; block=false)
+    _sendstate(bond, block? "EVAL_BLOCK": "EVAL", _dumps(bond.proto, code))
     _repl(bond)
 end
 
-function beval(bond::BondProc, code::BondRef; stm=true)
-    beval(bond, _code(bond, code); stm=stm)
+function beval(bond::BondProc, code::BondRef; block=false)
+    beval(bond, _code(bond, code); block=block)
 end
 
 function bcall(bond::BondProc, name::String, args...)

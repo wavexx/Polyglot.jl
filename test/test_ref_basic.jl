@@ -10,7 +10,7 @@ ret = beval(py, bref(py, "1"))
 code = bref(py, """def test_simple():
     return \"Hello world!\"
 """)
-beval(py, code; stm=false)
+beval(py, code; block=true)
 ret = beval(py, "test_simple()")
 @test ret == "Hello world!"
 

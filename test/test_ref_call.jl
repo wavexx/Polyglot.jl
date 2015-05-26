@@ -5,7 +5,7 @@ py = make_bond("Python", `python`; timeout=TIMEOUT)
 # test ref with call
 beval(py, """def test_call(arg, *args):
     return arg
-"""; stm=false)
+"""; block=true)
 
 # the second (ignored) argument enforces XCALL
 ret = bcall(py, "test_call", 1, bref(py, "None"))

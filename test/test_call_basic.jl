@@ -5,7 +5,7 @@ py = make_bond("Python", `python`; timeout=TIMEOUT)
 # test call with a simple function
 beval(py, """def test_simple():
     return \"Hello world!\"
-"""; stm=false)
+"""; block=true)
 
 ret = beval(py, "test_simple()")
 @test ret == "Hello world!"
