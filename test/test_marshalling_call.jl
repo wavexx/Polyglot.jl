@@ -17,5 +17,5 @@ for value in [nothing; true; false; 0; 1; "String"; 0.0; 1.;
     @test bcall(py, "test_id", value) == value
 
     # tuples are upgraded to arrays
-    @test bcall(py, "test_id2", value, value) == [value, value]
+    @test bcall(py, "test_id2", value, value) == [value; value]
 end

@@ -15,3 +15,11 @@ ret = fn()
 fn = importfn(py, "str")
 ret = fn("Hello world!")
 @test ret == "Hello world!"
+
+# empty return value
+beval(py, """def test_empty():
+    pass
+"""; stm=false)
+
+@test bcall(py, "test_empty") === nothing
+@test importfn(py, "test_empty")() === nothing

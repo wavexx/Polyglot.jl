@@ -50,7 +50,7 @@ function _repl(bond::BondProc)
     while true
         expect!(bond.proc, "\n")
         cmd, args = @compat split(bond.proc.before, " ", limit=2)
-        args = length(bond.proc.before) > 1? JSON.parse(args): []
+        args = length(bond.proc.before) > 1? _loads(bond.proto, args): []
 
         if cmd == "RETURN"
             return args
@@ -74,10 +74,10 @@ function _repl(bond::BondProc)
                 ret = bond.trans_except? e: string(e)
             end
             try
-                code = JSON.json(ret)
+                code = _dumps(bond.proto, ret)
             catch e
                 state = "ERROR"
-                code = JSON.json(string(e))
+                code = _dumps(bond.proto, string(e))
             end
             _sendstate(bond, state, code)
             continue
@@ -117,9 +117,25 @@ function _code(bond::BondProc, ref::BondRef)
 end
 
 
+## Serialization
+function _dumps(proto, data)
+    # TODO
+    try
+        JSON.json(data)
+    catch e
+        throw(BondSerializationException(string(e), false))
+    end
+end
+
+function _loads(proto, data)
+    # TODO
+    JSON.parse(data)
+end
+
+
 ## Main functions
 function beval(bond::BondProc, code::String; stm=true)
-    _sendstate(bond, stm? "EVAL": "EVAL_BLOCK", JSON.json(code))
+    _sendstate(bond, stm? "EVAL": "EVAL_BLOCK", _dumps(bond.proto, code))
     _repl(bond)
 end
 
@@ -129,10 +145,10 @@ end
 
 function bcall(bond::BondProc, name::String, args...)
     if !any(x->isa(x, BondRef), args)
-        _sendstate(bond, "CALL", JSON.json((name, args)))
+        _sendstate(bond, "CALL", _dumps(bond.proto, (name, args)))
     else
-        args = [(@compat Int(isa(arg, BondRef)), _code(bond, arg)) for arg in args]
-        _sendstate(bond, "XCALL", JSON.json((name, args)))
+        args = [(@compat Int(isa(data, BondRef)), _code(bond, data)) for data in args]
+        _sendstate(bond, "XCALL", _dumps(bond.proto, (name, args)))
     end
     _repl(bond)
 end
@@ -142,7 +158,7 @@ function importfn(bond::BondProc, name::String)
 end
 
 function exportfn(bond::BondProc, func::Function, name::String=string(func))
-    _sendstate(bond, "EXPORT", JSON.json(name))
+    _sendstate(bond, "EXPORT", _dumps(bond.proto, name))
     bond.bindings[name] = func
     _repl(bond)
 end
@@ -198,7 +214,7 @@ function make_bond(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{S
             proc = ExpectProc(cmd, timeout; env=env)
         catch e
             isa(e, Base.UVError) || rethrow(e)
-            throw(BondException(string("cannot execute: ", cmd)))
+            throw(BondException(string("cannot execute: ", Base.shell_escape(cmd))))
         end
     else
         for cmd_block in data["command"]
@@ -228,7 +244,8 @@ function make_bond(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{S
             Expect.raw!(proc, true)
         end
     catch e
-        throw(BondException(string("cannot get an interactive prompt using: ", cmd)))
+        throw(BondException(string("cannot get an interactive prompt using: ",
+                                   Base.shell_escape(cmd))))
     end
 
     # inject base loader
@@ -245,7 +262,7 @@ function make_bond(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{S
     # load the second stage
     try
         stage2 = _load_stage(lang, data["init"]["stage2"])
-        stage2 = @compat Dict("code"=>stage2, "start"=>["JSON", trans_except])
+        stage2 = @compat Dict("code"=>stage2, "start"=>[protocol, trans_except])
         sendline(proc, JSON.json(stage2))
         expect!(proc, ["READY\n"])
     catch e
