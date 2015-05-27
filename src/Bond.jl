@@ -90,17 +90,17 @@ function _repl(bond::BondProc)
     throw(BondException("unknown interpreter state"))
 end
 
+close(bond::BondProc) = close(bond.proc)
+
+function _sendstate(bond::BondProc, cmd::ASCIIString, code::String)
+    sendline(bond.proc, string(cmd, " ", code))
+end
+
 
 ## Refs
 type BondRef
     bond::BondProc
     code::String
-end
-
-close(bond::BondProc) = close(bond.proc)
-
-function _sendstate(bond::BondProc, cmd::ASCIIString, code::String)
-    sendline(bond.proc, string(cmd, " ", code))
 end
 
 function bref(bond::BondProc, code::String)
@@ -177,18 +177,18 @@ end
 ## Support functions
 function _driver_path(path::String)
     root = dirname(@__FILE__())
-    return "$root/drivers/$path"
+    return joinpath(root, "drivers", path)
 end
 
 function query_driver(lang::String)
-    JSON.parse(readall(_driver_path("$lang/bond.json")))
+    JSON.parse(readall(_driver_path(joinpath(lang, "bond.json"))))
 end
 
 function list_drivers()
     drivers = String[]
     root = joinpath(dirname(@__FILE__()), "drivers")
     for file in readdir(root)
-        data_path = "$root/$file/bond.json"
+        data_path = joinpath(root, file, "bond.json")
         if isfile(data_path)
             push!(drivers, file)
         end
@@ -198,7 +198,7 @@ end
 
 function _load_stage(lang::String, data::Dict)
     path = data["file"]
-    code = readall(_driver_path("$lang/$path"))
+    code = readall(_driver_path(joinpath(lang, path)))
     if haskey(data, "sub")
         code = replace(code, Regex(data["sub"][1]), unescape_string(data["sub"][2]))
     end
