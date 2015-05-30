@@ -1,13 +1,13 @@
-==================================================================================
-Bond.jl: transparent remote/recursive evaluation between Julia and other languages
-==================================================================================
+======================================================================
+Polyglot.jl: transparent remote/recursive evaluation between languages
+======================================================================
 
 .. contents::
 
-The Julia module ``Bond`` supports transparent remote/recursive evaluation
+The Julia module ``Polyglot`` supports transparent remote/recursive evaluation
 between Julia and another interpreter through automatic call serialization.
 
-In poorer words, a ``Bond`` lets you call functions in other languages as they
+In poorer words, ``Polyglot` lets you call functions in other languages as they
 were regular Julia functions. It *also* allows other languages to *call Julia
 functions* as if they were native.
 
@@ -15,18 +15,18 @@ Remote output is also transparently redirected locally, and since the
 evaluation is performed through a persistent co-process, you can actually spawn
 interpreters on different hosts through "ssh" efficiently.
 
-``Bond`` currently supports PHP, Perl, JavaScript (Node.js) and Python.
+``Polyglot`` currently supports PHP, Perl, JavaScript (Node.js) and Python.
 
-``Bond.jl`` is currently a work-in-progress and under-documented. The API is
-subject to change without notice. Suggestions about API design are highly
+``Polyglot.jl`` is currently a work-in-progress and under-documented. The API
+is subject to change without notice. Suggestions about API design are highly
 appreciated. Extensive documentation with examples_, including details about
 `language support`_ can be found on Python's `bond module documentation`_,
 which uses the same underlying infrastructure. In particular, while ``Bond.jl``
 can be used with Python, it's definitely not as sophisticated or as efficient
-as PyCall_ (although ``Bond`` can be used on remote Python processes and/or to
-seamlessy mix between Python 2/Python 3 code).
+as PyCall_ (although ``Polyglot`` can be used on remote Python processes and/or
+to seamlessy mix between Python 2/3 code).
 
-.. _examples: http://www.thregr.org/~wavexx/software/python-bond/#a-concrete-example
+.. _examples: http://www.thregr.org/~wavexx/software/python-bond/#practical-examples
 .. _language support: http://www.thregr.org/~wavexx/software/python-bond/#language-support
 .. _bond module documentation: http://www.thregr.org/~wavexx/software/python-bond/
 .. _PyCall: https://github.com/stevengj/PyCall.jl
@@ -40,7 +40,7 @@ Overview
   julia> # Let's bond with a PHP interpreter
   julia> using Bond;
   julia> php = make_bond("PHP");
-  julia> beval(php, "echo \"Hello world!\\n\""; block=true);
+  julia> reval(php, "echo \"Hello world!\\n\""; block=true);
   Hello world!
 
   julia> # Make an expensive split function using PHP's explode
@@ -56,14 +56,14 @@ Overview
   julia> # Call Julia from PHP
   julia> call_me() = println("Hi, this is Julia talking!");
   julia> exportfn(php, call_me);
-  julia> beval(php, "call_me()");
+  julia> reval(php, "call_me()");
   Hi, this is Julia talking!
 
   julia> # Bridge two worlds!
   julia> perl = make_bond("Perl");
   julia> proxyfn(php, "explode", perl);
   julia> # note: explode is now available to Perl, but still executes in PHP
-  julia> beval(perl, "explode(\"=\", \"Mind=blown!\")")
+  julia> reval(perl, "explode(\"=\", \"Mind=blown!\")")
   2-element Array{Any,1}:
    "Mind"  
    "blown!"
@@ -75,32 +75,32 @@ API
 Initialization
 --------------
 
-Bonds can be constructed by using the ``make_bond()`` function:
+Bonds can be constructed by using the ``bond!()`` function:
 
 .. code:: julia
 
-  using Bond
-  interpreter = make_bond("language")
+  using Polyglot
+  interpreter = bond!("language")
 
 The first argument should be the desired language name ("JavaScript", "PHP",
 "Perl", "Python"). The list of supported languages can be fetched dynamically
-using ``Bond.list_drivers()``.
+using ``Polyglot.list_drivers()``.
 
 You can override the default interpreter command using the second argument,
 which allows to specify any regular command_ to be executed:
 
 .. code:: julia
 
-  using Bond
-  py = make_bond("Python", `ssh remote python3`)
+  using Polyglot
+  py = bond!("Python", `ssh remote python3`)
 
 An additional *list* of arguments to the interpreter can be provided using the
 third argument, ``args``:
 
 .. code:: julia
 
-  using Bond
-  py = make_bond("Python", `ssh remote python3`, String["-E"; "-OO"])
+  using Polyglot
+  py = bond!("Python", `ssh remote python3`, String["-E"; "-OO"])
 
 The *arguments*, as for the command, are automatically quoted.
 
@@ -127,8 +127,8 @@ The following keyword arguments are supported:
 ``timeout``:
 
   Defines the timeout for the underlying communication protocol. Note that
-  ``Bond`` cannot distinguish between a slow call or noise generated while the
-  interpreter is set up. Defaults to 60 seconds.
+  ``Polyglot`` cannot distinguish between a slow call or noise generated while
+  the interpreter is set up. Defaults to 60 seconds.
 
 ``trans_except``:
 
@@ -144,10 +144,10 @@ The following keyword arguments are supported:
 .. _command: http://julia.readthedocs.org/en/latest/manual/running-external-programs/
 
 
-``Bond`` functions
-------------------
+``Polyglot`` functions
+----------------------
 
-``beval(bond, code; block=false)``
+``reval(bond, code; block=false)``
 
   With ``block=false`` (the default), evaluate and return the value of a
   *single statement* of code in the interpreter.
@@ -159,14 +159,14 @@ The following keyword arguments are supported:
 ``bref(bond, code)``:
 
   Return a reference to an *single, unevaluated statement* of code, which can
-  be later used in beval() or as an *immediate* argument to call(). See `Quoted
+  be later used in reval() or as an *immediate* argument to call(). See `Quoted
   expressions`_.
 
 ``close(bond)``:
 
   Terminate the communication with the interpreter.
 
-``bcall(bond, name, args...)``:
+``rcall(bond, name, args...)``:
 
   Call a function "name" in the interpreter using the supplied list of
   arguments \*args (apply \*args to a callable *statement* defined by "name").
@@ -206,7 +206,7 @@ The following keyword arguments are supported:
 Exceptions
 ----------
 
-``BondException``:
+``PolyglotException``:
   Thrown during initialization or unrecoverable errors.
 
 ``BondTerminatedException``:
@@ -232,21 +232,21 @@ text/data in these cases, as it will contain several nested exceptions.
 Quoted expressions
 ------------------
 
-``Bond`` has minimal support for quoted expressions, through the use of
+``Polyglot`` has minimal support for quoted expressions, through the use of
 ``bref()``. ``bref()`` returns a reference to a unevaluated statement that can
-be fed back to ``beval()`` or as an *immediate* (i.e.: not nested) argument to
-``bcall()``. References are bound to the interpreter that created them.
+be fed back to ``reval()`` or as an *immediate* (i.e.: not nested) argument to
+``rcall()``. References are bound to the interpreter that created them.
 
 ``bref()`` allows to "call" methods that take remote un-serializable arguments,
 such as file descriptors, without the use of a support function and/or eval:
 
 .. code:: julia
 
-  pl = make_bond("Perl")
-  beval(pl, "open(\$fd, \">file.txt\");"; block=true)
+  pl = bond!("Perl")
+  reval(pl, "open(\$fd, \">file.txt\");"; block=true)
   fd = bref(pl, "\$fd")
-  bcall(pl, "syswrite", fd, "Hello world!")
-  bcall(pl, "close", fd)
+  rcall(pl, "syswrite", fd, "Hello world!")
+  rcall(pl, "close", fd)
 
 Since references cannot be nested, there are still cases where it might be
 necessary to use a support function. To demonstrate, we rewrite the above
@@ -255,17 +255,17 @@ world!") to be local:
 
 .. code:: julia
 
-  pl = make_bond("Perl")
-  beval(pl, "open(\$fd, \">file.txt\");"; block=true)
-  beval(pl, "sub syswrite_fd { syswrite(\$fd, shift()); };", block=true)
-  bcall("syswrite_fd", "Hello world!")
-  beval("close(\$fd)")
+  pl = bond!("Perl")
+  reval(pl, "open(\$fd, \">file.txt\");"; block=true)
+  reval(pl, "sub syswrite_fd { syswrite(\$fd, shift()); };", block=true)
+  rcall("syswrite_fd", "Hello world!")
+  reval("close(\$fd)")
 
 Or more succinctly:
 
 .. code:: julia
 
-  bcall(pl, "sub { syswrite(\$fd, shift()); }", "Hello world!")
+  rcall(pl, "sub { syswrite(\$fd, shift()); }", "Hello world!")
 
 
 Language support
@@ -278,7 +278,7 @@ General/support mailing list
 ============================
 
 If you are interested in announcements and development discussions about
-``Bond``, you can subscribe to the `bond-devel` mailing list by sending an
+``Polyglot``, you can subscribe to the `bond-devel` mailing list by sending an
 empty email to <bond-devel+subscribe@thregr.org>.
 
 You can contact the main author directly at <wavexx@thregr.org>, though using
@@ -288,5 +288,5 @@ the general list is encouraged.
 Authors and Copyright
 =====================
 
-| "Bond.jl" is distributed under the MIT license (see ``LICENSE.rst``).
+| "Polyglot.jl" is distributed under the GNU GPLv2+ license (see ``COPYING.txt``).
 | Copyright(c) 2015 by wave++ "Yuri D'Elia" <wavexx@thregr.org>.
