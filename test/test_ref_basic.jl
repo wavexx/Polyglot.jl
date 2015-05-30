@@ -1,19 +1,19 @@
 include("prelude.jl")
 
-py = make_bond("Python", `python`; timeout=TIMEOUT)
+py = bond!("Python", `python`; timeout=TIMEOUT)
 
 # test ref with a statement
-ret = beval(py, bref(py, "1"))
+ret = reval(py, rref(py, "1"))
 @test ret === 1
 
 # test ref with a code block
-code = bref(py, """def test_simple():
+code = rref(py, """def test_simple():
     return \"Hello world!\"
 """)
-beval(py, code; block=true)
-ret = beval(py, "test_simple()")
+reval(py, code; block=true)
+ret = reval(py, "test_simple()")
 @test ret == "Hello world!"
 
 # check environment
-ret = beval(py, "1")
+ret = reval(py, "1")
 @test ret === 1

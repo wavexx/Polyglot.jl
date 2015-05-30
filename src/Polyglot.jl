@@ -1,5 +1,5 @@
-module Bond
-export make_bond, beval, bcall, bref, importfn, exportfn, proxyfn
+module Polyglot
+export bond!, reval, rcall, rref, importfn, exportfn, proxyfn
 export BondException, BondTerminatedException, BondRemoteException, BondSerializationException
 
 ## Imports
@@ -103,7 +103,7 @@ type BondRef
     code::String
 end
 
-function bref(bond::BondProc, code::String)
+function rref(bond::BondProc, code::String)
     BondRef(bond, code)
 end
 
@@ -135,16 +135,16 @@ end
 
 
 ## Main functions
-function beval(bond::BondProc, code::String; block=false)
+function reval(bond::BondProc, code::String; block=false)
     _sendstate(bond, block? "EVAL_BLOCK": "EVAL", _dumps(bond.proto, code))
     _repl(bond)
 end
 
-function beval(bond::BondProc, code::BondRef; block=false)
-    beval(bond, _code(bond, code); block=block)
+function reval(bond::BondProc, code::BondRef; block=false)
+    reval(bond, _code(bond, code); block=block)
 end
 
-function bcall(bond::BondProc, name::String, args...)
+function rcall(bond::BondProc, name::String, args...)
     if !any(x->isa(x, BondRef), args)
         _sendstate(bond, "CALL", _dumps(bond.proto, (name, args)))
     else
@@ -155,7 +155,7 @@ function bcall(bond::BondProc, name::String, args...)
 end
 
 function importfn(bond::BondProc, name::String)
-    (args...)->bcall(bond, name, args...)
+    (args...)->rcall(bond, name, args...)
 end
 
 function exportfn(bond::BondProc, func::Function, name::String=string(func))
@@ -206,9 +206,9 @@ function _load_stage(lang::String, data::Dict)
 end
 
 
-function make_bond(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{String}=String[];
-                   cwd::String=pwd(), env::Base.EnvHash=ENV, def_args=true,
-                   trans_except::Union(Bool,Nothing)=nothing, timeout::Real=60, protocol::String="")
+function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{String}=String[];
+               cwd::String=pwd(), env::Base.EnvHash=ENV, def_args=true,
+               trans_except::Union(Bool,Nothing)=nothing, timeout::Real=60, protocol::String="")
     protocol = "JSON" # TODO
     trans_except = false # TODO
     data = query_driver(lang)

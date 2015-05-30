@@ -1,9 +1,9 @@
 include("prelude.jl")
 
-py = make_bond("Python", `python`; timeout=TIMEOUT)
+py = bond!("Python", `python`; timeout=TIMEOUT)
 
 # test importfn with a function without arguments
-beval(py, """def test_simple():
+reval(py, """def test_simple():
     return \"Hello world!\"
 """; block=true)
 
@@ -17,9 +17,9 @@ ret = fn("Hello world!")
 @test ret == "Hello world!"
 
 # empty return value
-beval(py, """def test_empty():
+reval(py, """def test_empty():
     pass
 """; block=true)
 
-@test bcall(py, "test_empty") === nothing
+@test rcall(py, "test_empty") === nothing
 @test importfn(py, "test_empty")() === nothing

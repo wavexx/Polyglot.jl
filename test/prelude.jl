@@ -1,5 +1,5 @@
 using Base.Test
-using Bond
+using Polyglot
 using Compat
 
 TIMEOUT = parse(Int, get(ENV, "BOND_TIMEOUT", "1"))

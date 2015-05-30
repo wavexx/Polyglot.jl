@@ -1,14 +1,14 @@
 include("prelude.jl")
 
-py = make_bond("Python", `python`; timeout=TIMEOUT)
+py = bond!("Python", `python`; timeout=TIMEOUT)
 
 # test eval without error
-ret = beval(py, "\"Hello world!\"")
+ret = reval(py, "\"Hello world!\"")
 @test ret == "Hello world!"
 
 # broken statement
-@test_throws BondRemoteException beval(py, "\"")
+@test_throws BondRemoteException reval(py, "\"")
 
 # ensure the environment is still alive
-ret = beval(py, "1")
+ret = reval(py, "1")
 @assert ret === 1

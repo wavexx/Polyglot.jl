@@ -8,6 +8,7 @@ julia:
 env:
   global:
     - BOND_TIMEOUT=5
+    - JL_PKG=Polyglot
 before_script:
   # allow ssh loopback
   - ssh-keygen -t rsa -N '' -C '' -f ~/.ssh/id_rsa

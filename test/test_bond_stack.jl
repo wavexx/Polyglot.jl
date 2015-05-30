@@ -1,11 +1,11 @@
 include("prelude.jl")
 using Expect
 
-function bond_stack_depth(bond::Bond.BondProc)
+function bond_stack_depth(bond::Polyglot.BondProc)
     depth = 0
     while true
         try
-            beval(bond, "1")
+            reval(bond, "1")
         catch e
             isa(e, BondTerminatedException) || rethrow(e)
             break
@@ -17,27 +17,27 @@ function bond_stack_depth(bond::Bond.BondProc)
 end
 
 # initial depth
-py = make_bond("Python", `python`; timeout=TIMEOUT)
+py = bond!("Python", `python`; timeout=TIMEOUT)
 @test bond_stack_depth(py) == 1
 
 # depth after remote serialization error
-py = make_bond("Python", `python`; timeout=TIMEOUT)
-@test_throws BondSerializationException beval(py, "lambda x: x")
-@test beval(py, "1") === 1
+py = bond!("Python", `python`; timeout=TIMEOUT)
+@test_throws BondSerializationException reval(py, "lambda x: x")
+@test reval(py, "1") === 1
 @test bond_stack_depth(py) == 1
 
 # depth after exception in exported function
-py = make_bond("Python", `python`; timeout=TIMEOUT)
+py = bond!("Python", `python`; timeout=TIMEOUT)
 local_except() = raise("test")
 exportfn(py, local_except)
-@test_throws BondRemoteException bcall(py, "local_except")
-@test beval(py, "1") === 1
+@test_throws BondRemoteException rcall(py, "local_except")
+@test reval(py, "1") === 1
 @test bond_stack_depth(py) == 1
 
 # depth after serialization error in exported function
-py = make_bond("Python", `python`; timeout=TIMEOUT)
+py = bond!("Python", `python`; timeout=TIMEOUT)
 local_ser_except() = Base
 exportfn(py, local_ser_except)
-@test_throws BondSerializationException bcall(py, "local_ser_except")
-@test beval(py, "1") === 1
+@test_throws BondSerializationException rcall(py, "local_ser_except")
+@test reval(py, "1") === 1
 @test bond_stack_depth(py) == 1

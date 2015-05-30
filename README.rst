@@ -156,7 +156,7 @@ The following keyword arguments are supported:
   the interpreter. Any construct which is legal by the current interpreter is
   allowed. Nothing is returned.
 
-``bref(bond, code)``:
+``rref(bond, code)``:
 
   Return a reference to an *single, unevaluated statement* of code, which can
   be later used in reval() or as an *immediate* argument to call(). See `Quoted
@@ -206,8 +206,8 @@ The following keyword arguments are supported:
 Exceptions
 ----------
 
-``PolyglotException``:
-  Thrown during initialization or unrecoverable errors.
+``BondException``:
+  Thrown during ``bond!`` initialization or unrecoverable errors.
 
 ``BondTerminatedException``:
   Thrown when the bond exits unexpectedly.
@@ -233,18 +233,18 @@ Quoted expressions
 ------------------
 
 ``Polyglot`` has minimal support for quoted expressions, through the use of
-``bref()``. ``bref()`` returns a reference to a unevaluated statement that can
+``rref()``. ``rref()`` returns a reference to a unevaluated statement that can
 be fed back to ``reval()`` or as an *immediate* (i.e.: not nested) argument to
 ``rcall()``. References are bound to the interpreter that created them.
 
-``bref()`` allows to "call" methods that take remote un-serializable arguments,
+``rref()`` allows to "call" methods that take remote un-serializable arguments,
 such as file descriptors, without the use of a support function and/or eval:
 
 .. code:: julia
 
   pl = bond!("Perl")
   reval(pl, "open(\$fd, \">file.txt\");"; block=true)
-  fd = bref(pl, "\$fd")
+  fd = rref(pl, "\$fd")
   rcall(pl, "syswrite", fd, "Hello world!")
   rcall(pl, "close", fd)
 
