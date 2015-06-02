@@ -4,30 +4,30 @@ Polyglot.jl: transparent remote/recursive evaluation between languages
 
 .. contents::
 
-The Julia module ``Polyglot`` supports transparent remote/recursive evaluation
-between Julia and another interpreter through automatic call serialization.
+The Julia module ``Polyglot.jl`` supports transparent remote/recursive
+evaluation between Julia and another interpreter through automatic call
+serialization.
 
-In poorer words, ``Polyglot` lets you call functions in other languages as they
-were regular Julia functions. It *also* allows other languages to *call Julia
-functions* as if they were native.
+In poorer words, ``Polyglot.jl`` lets you call functions in other languages as
+they were regular Julia functions. It *also* allows other languages to *call
+Julia functions* as if they were native.
 
 Remote output is also transparently redirected locally, and since the
 evaluation is performed through a persistent co-process, you can actually spawn
 interpreters on different hosts through "ssh" efficiently.
 
-``Polyglot`` currently supports PHP, Perl, JavaScript (Node.js) and Python.
+``Polyglot.jl`` currently supports PHP, Perl, JavaScript (Node.js) and Python.
 
-``Polyglot.jl`` is currently a work-in-progress and under-documented. The API
-is subject to change without notice. Suggestions about API design are highly
-appreciated. Extensive documentation with examples_, including details about
-`language support`_ can be found on Python's `bond module documentation`_,
-which uses the same underlying infrastructure. In particular, while ``Bond.jl``
-can be used with Python, it's definitely not as sophisticated or as efficient
-as PyCall_ (although ``Polyglot`` can be used on remote Python processes and/or
-to seamlessy mix between Python 2/3 code).
+``Polyglot.jl`` is currently a work-in-progress. Suggestions about API design
+are highly appreciated: we're looking for a consistent calling interface
+between regular Julia's multiprocessing_ and other external language bridges.
 
-.. _examples: http://www.thregr.org/~wavexx/software/python-bond/#practical-examples
-.. _language support: http://www.thregr.org/~wavexx/software/python-bond/#language-support
+As an additional note, while ``Polyglot.jl`` can be used with Python, it's
+definitely not as sophisticated or as efficient as PyCall_. If you don't need
+to run multiple/remote/mixed Python instances (for example, to mix major Python
+versions or to use PyPy), using PyCall_ is advisable.
+
+.. _multiprocessing: https://julia.readthedocs.org/en/latest/manual/parallel-computing/
 .. _bond module documentation: http://www.thregr.org/~wavexx/software/python-bond/
 .. _PyCall: https://github.com/stevengj/PyCall.jl
 
@@ -35,11 +35,13 @@ to seamlessy mix between Python 2/3 code).
 Overview
 ========
 
+``Polyglot.jl`` can communicate with another interpreter by "bonding" with it:
+
 .. code:: jlcon
 
   julia> # Let's bond with a PHP interpreter
-  julia> using Bond;
-  julia> php = make_bond("PHP");
+  julia> using Polyglot;
+  julia> php = bond!("PHP");
   julia> reval(php, "echo \"Hello world!\\n\""; block=true);
   Hello world!
 
@@ -60,7 +62,7 @@ Overview
   Hi, this is Julia talking!
 
   julia> # Bridge two worlds!
-  julia> perl = make_bond("Perl");
+  julia> perl = bond!("Perl");
   julia> proxyfn(php, "explode", perl);
   julia> # note: explode is now available to Perl, but still executes in PHP
   julia> reval(perl, "explode(\"=\", \"Mind=blown!\")")
@@ -69,6 +71,14 @@ Overview
    "blown!"
 
 
+Practical examples
+==================
+
+Incomplete section.
+
+Please see http://www.thregr.org/~wavexx/software/python-bond/#practical-examples
+
+   
 API
 ===
 
@@ -102,11 +112,12 @@ third argument, ``args``:
   using Polyglot
   py = bond!("Python", `ssh remote python3`, String["-E"; "-OO"])
 
-The *arguments*, as for the command, are automatically quoted.
+The optional *arguments* are just strings. They are quoted and appended to the
+main command *after* default arguments.
 
-Some command line arguments may be supplied automatically by the driver to
-force an interactive shell; for example "-i" is supplied if Python is
-requested. You can disable default arguments by using ``def_args=False``.
+Default arguments may be supplied automatically by the driver to force an
+interactive shell; for example "-i" is supplied if Python is requested. You can
+disable default arguments by using ``def_args=False``.
 
 The following keyword arguments are supported:
 
@@ -127,7 +138,7 @@ The following keyword arguments are supported:
 ``timeout``:
 
   Defines the timeout for the underlying communication protocol. Note that
-  ``Polyglot`` cannot distinguish between a slow call or noise generated while
+  ``bond!()`` cannot distinguish between a slow call or noise generated while
   the interpreter is set up. Defaults to 60 seconds.
 
 ``trans_except``:
@@ -144,23 +155,23 @@ The following keyword arguments are supported:
 .. _command: http://julia.readthedocs.org/en/latest/manual/running-external-programs/
 
 
-``Polyglot`` functions
-----------------------
+Exported functions
+------------------
 
 ``reval(bond, code; block=false)``
 
   With ``block=false`` (the default), evaluate and return the value of a
-  *single statement* of code in the interpreter.
+  *single statement* of code in the top-level of the interpreter.
 
-  With ``block=true`` instead, evaluate a code block inside the top-level of
-  the interpreter. Any construct which is legal by the current interpreter is
+  With ``block=true`` instead, evaluate a code block in the top-level of the
+  interpreter. Any construct which is legal by the current interpreter is
   allowed. Nothing is returned.
 
 ``rref(bond, code)``:
 
   Return a reference to an *single, unevaluated statement* of code, which can
-  be later used in reval() or as an *immediate* argument to call(). See `Quoted
-  expressions`_.
+  be later used in reval() or as an *immediate* argument to rcall(). See
+  `Quoted expressions`_.
 
 ``close(bond)``:
 
@@ -192,9 +203,15 @@ The following keyword arguments are supported:
 
 ``proxyfn(bond, name, other_bond, other_name)``:
 
-  Export a remote function "name" from the current ``bond`` to "other_bond",
-  named as "other_name". If "other_name" is not provided, the same value as
-  "name" is used.
+  Export a remote function "name" from "bond" to "other_bond", named as
+  "other_name". If "other_name" is not provided, the same value as "name" is
+  used:
+
+  .. code:: julia
+
+    php = bond!("PHP")
+    py = bond!("Python")
+    proxyfn(php, "explode", python)
 
 ``interact()``:
 
@@ -207,7 +224,7 @@ Exceptions
 ----------
 
 ``BondException``:
-  Thrown during ``bond!`` initialization or unrecoverable errors.
+  Thrown during ``bond!()`` initialization or unrecoverable errors.
 
 ``BondTerminatedException``:
   Thrown when the bond exits unexpectedly.
@@ -232,10 +249,11 @@ text/data in these cases, as it will contain several nested exceptions.
 Quoted expressions
 ------------------
 
-``Polyglot`` has minimal support for quoted expressions, through the use of
-``rref()``. ``rref()`` returns a reference to a unevaluated statement that can
-be fed back to ``reval()`` or as an *immediate* (i.e.: not nested) argument to
-``rcall()``. References are bound to the interpreter that created them.
+``Polyglot.jl`` has minimal support for working with quoted expressions,
+through the use of ``rref()``. ``rref()`` returns a reference to a unevaluated
+statement that can be fed back to ``reval()`` or as an *immediate* (i.e.: not
+nested) argument to ``rcall()``. References are bound to the interpreter that
+created them.
 
 ``rref()`` allows to "call" methods that take remote un-serializable arguments,
 such as file descriptors, without the use of a support function and/or eval:
@@ -271,6 +289,8 @@ Or more succinctly:
 Language support
 ================
 
+Incomplete section.
+
 Please see http://www.thregr.org/~wavexx/software/python-bond/#language-support
 
 
@@ -278,7 +298,7 @@ General/support mailing list
 ============================
 
 If you are interested in announcements and development discussions about
-``Polyglot``, you can subscribe to the `bond-devel` mailing list by sending an
+``Polyglot.jl``, you can subscribe to the `bond-devel` mailing list by sending an
 empty email to <bond-devel+subscribe@thregr.org>.
 
 You can contact the main author directly at <wavexx@thregr.org>, though using
