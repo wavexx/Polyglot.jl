@@ -10,7 +10,7 @@ function bond_stack_depth(bond::Polyglot.BondProc)
             isa(e, BondTerminatedException) || rethrow(e)
             break
         end
-        sendline(bond.proc, "RETURN")
+        println(bond.proc, "RETURN")
         depth += 1
     end
     depth

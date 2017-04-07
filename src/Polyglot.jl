@@ -92,7 +92,7 @@ end
 close(bond::BondProc) = close(bond.proc)
 
 function _sendstate(bond::BondProc, cmd::ASCIIString, code::String)
-    sendline(bond.proc, string(cmd, " ", code))
+    print(bond.proc, string(cmd, " ", code, "\n"))
 end
 
 
@@ -246,7 +246,7 @@ function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{Strin
         end
 
         # probe the interpreter
-        sendline(proc, data["init"]["probe"])
+        println(proc, data["init"]["probe"])
         if expect!(proc, ["STAGE1\n", "STAGE1\r\n"]) == 2
             Expect.raw!(proc, true)
         end
@@ -258,7 +258,7 @@ function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{Strin
     # inject base loader
     try
         stage1 = _load_stage(lang, data["init"]["stage1"])
-        sendline(proc, stage1)
+        println(proc, stage1)
         if expect!(proc, ["STAGE2\n", "STAGE2\r\n"]) == 2
             throw(BondException("cannot switch terminal to raw mode"))
         end
@@ -270,7 +270,7 @@ function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{Strin
     try
         stage2 = _load_stage(lang, data["init"]["stage2"])
         stage2 = Dict("code"=>stage2, "start"=>[protocol, trans_except])
-        sendline(proc, JSON.json(stage2))
+        println(proc, JSON.json(stage2))
         expect!(proc, ["READY\n"])
     catch e
         throw(BondException(string("cannot initialize stage2: ", bond.proc.before)))
