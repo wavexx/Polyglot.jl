@@ -251,6 +251,7 @@ function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{Strin
             Expect.raw!(proc, true)
         end
     catch e
+        isa(e, Union{ExpectTimeout,ExpectEOF}) || rethrow(e)
         throw(BondException(string("cannot get an interactive prompt using: ",
                                    Base.shell_escape(cmd))))
     end
@@ -263,7 +264,8 @@ function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{Strin
             throw(BondException("cannot switch terminal to raw mode"))
         end
     catch e
-        throw(BondException(string("cannot initialize stage1: ", bond.proc.before)))
+        isa(e, Union{ExpectTimeout,ExpectEOF}) || rethrow(e)
+        throw(BondException(string("cannot initialize stage1: ", proc.before)))
     end
 
     # load the second stage
@@ -273,7 +275,8 @@ function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{Strin
         println(proc, JSON.json(stage2))
         expect!(proc, ["READY\n"])
     catch e
-        throw(BondException(string("cannot initialize stage2: ", bond.proc.before)))
+        isa(e, Union{ExpectTimeout,ExpectEOF}) || rethrow(e)
+        throw(BondException(string("cannot initialize stage2: ", proc.before)))
     end
 
     proto = None # TODO
