@@ -12,7 +12,7 @@ reval(py, """def test_id2(arg1, arg2):
 """; block=true)
 
 for value in [nothing; true; false; 0; 1; "String"; 0.0; 1.;
-              []; ["String"]; @compat Dict("a"=>"b")]
+              []; ["String"]; Dict("a"=>"b")]
     # single value
     @test rcall(py, "test_id", value) == value
 

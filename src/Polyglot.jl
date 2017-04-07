@@ -8,7 +8,6 @@ import Base: close
 
 using Expect
 using JSON
-using Compat
 
 
 ## Exceptions
@@ -40,7 +39,7 @@ type BondProc
 
     function BondProc(proc, lang, trans_except, proto)
         bindings = Dict()
-        channels = @compat Dict("STDOUT"=>STDOUT, "STDERR"=>STDERR)
+        channels = Dict("STDOUT"=>STDOUT, "STDERR"=>STDERR)
         new(proc, lang, trans_except, proto, bindings, channels)
     end
 end
@@ -49,7 +48,7 @@ end
 function _repl(bond::BondProc)
     while true
         expect!(bond.proc, "\n")
-        ret = @compat split(bond.proc.before, " ", limit=2)
+        ret = split(bond.proc.before, " ", limit=2)
         cmd = ret[1]
         args = length(ret) > 1? _loads(bond.proto, ret[2]): []
 
@@ -148,7 +147,7 @@ function rcall(bond::BondProc, name::String, args...)
     if !any(x->isa(x, BondRef), args)
         _sendstate(bond, "CALL", _dumps(bond.proto, (name, args)))
     else
-        args = [(@compat Int(isa(data, BondRef)), _code(bond, data)) for data in args]
+        args = [(Int(isa(data, BondRef)), _code(bond, data)) for data in args]
         _sendstate(bond, "XCALL", _dumps(bond.proto, (name, args)))
     end
     _repl(bond)
@@ -270,7 +269,7 @@ function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{Strin
     # load the second stage
     try
         stage2 = _load_stage(lang, data["init"]["stage2"])
-        stage2 = @compat Dict("code"=>stage2, "start"=>[protocol, trans_except])
+        stage2 = Dict("code"=>stage2, "start"=>[protocol, trans_except])
         sendline(proc, JSON.json(stage2))
         expect!(proc, ["READY\n"])
     catch e

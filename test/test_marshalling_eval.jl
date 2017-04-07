@@ -34,4 +34,4 @@ ret = reval(py, "[\"String\"]")
 @test ret == ["String"]
 
 ret = reval(py, "{\"a\": \"b\"}")
-@test ret == @compat Dict("a"=>"b")
+@test ret == Dict("a"=>"b")
