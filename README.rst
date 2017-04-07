@@ -211,7 +211,7 @@ Exported functions
 
     php = bond!("PHP")
     py = bond!("Python")
-    proxyfn(php, "explode", python)
+    proxyfn(php, "explode", py)
 
 ``interact()``:
 
@@ -298,8 +298,8 @@ General/support mailing list
 ============================
 
 If you are interested in announcements and development discussions about
-``Polyglot.jl``, you can subscribe to the `bond-devel` mailing list by sending an
-empty email to <bond-devel+subscribe@thregr.org>.
+``Polyglot.jl``, you can subscribe to the `bond-devel` mailing list by sending
+an empty email to <bond-devel+subscribe@thregr.org>.
 
 You can contact the main author directly at <wavexx@thregr.org>, though using
 the general list is encouraged.
@@ -309,4 +309,4 @@ Authors and Copyright
 =====================
 
 | "Polyglot.jl" is distributed under the GNU GPLv2+ license (see ``COPYING.txt``).
-| Copyright(c) 2015 by wave++ "Yuri D'Elia" <wavexx@thregr.org>.
+| Copyright(c) 2015-2017 by wave++ "Yuri D'Elia" <wavexx@thregr.org>.
