@@ -12,18 +12,18 @@ using JSON
 
 ## Exceptions
 type BondException <: Exception
-    msg::ASCIIString
+    msg::String
 end
 
 type BondTerminatedException <: Exception end
 
 type BondRemoteException <: Exception
-    msg::ASCIIString
+    msg::String
     data
 end
 
 type BondSerializationException <: Exception
-    msg::ASCIIString
+    msg::String
     remote::Bool
 end
 
@@ -91,7 +91,7 @@ end
 
 close(bond::BondProc) = close(bond.proc)
 
-function _sendstate(bond::BondProc, cmd::ASCIIString, code::String)
+function _sendstate(bond::BondProc, cmd::String, code::String)
     print(bond.proc, string(cmd, " ", code, "\n"))
 end
 
@@ -180,7 +180,7 @@ function _driver_path(path::String)
 end
 
 function query_driver(lang::String)
-    JSON.parse(readall(_driver_path(joinpath(lang, "bond.json"))))
+    JSON.parse(readstring(_driver_path(joinpath(lang, "bond.json"))))
 end
 
 function list_drivers()
@@ -197,7 +197,7 @@ end
 
 function _load_stage(lang::String, data::Dict)
     path = data["file"]
-    code = readall(_driver_path(joinpath(lang, path)))
+    code = readstring(_driver_path(joinpath(lang, path)))
     if haskey(data, "sub")
         code = replace(code, Regex(data["sub"][1]), unescape_string(data["sub"][2]))
     end
@@ -205,9 +205,9 @@ function _load_stage(lang::String, data::Dict)
 end
 
 
-function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{String}=String[];
+function bond!(lang::String, cmd::Union{Cmd,Void}=nothing, args::Vector{String}=String[];
                cwd::String=pwd(), env::Base.EnvHash=ENV, def_args=true,
-               trans_except::Union(Bool,Nothing)=nothing, timeout::Real=60, protocol::String="")
+               trans_except::Union{Bool,Void}=nothing, timeout::Real=60, protocol::String="")
     protocol = "JSON" # TODO
     trans_except = false # TODO
     data = query_driver(lang)
@@ -279,7 +279,7 @@ function bond!(lang::String, cmd::Union(Cmd,Nothing)=nothing, args::Vector{Strin
         throw(BondException(string("cannot initialize stage2: ", proc.before)))
     end
 
-    proto = None # TODO
+    proto = Void # TODO
     return BondProc(proc, lang, trans_except, proto)
 end
 

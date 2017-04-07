@@ -31,7 +31,7 @@ function _capture_output(fun, fd, set_fd)
         set_fd(old)
         close(wr)
     end
-    readall(rd)
+    readstring(rd)
 end
 
 capture_stdout(fun) = _capture_output(fun, STDOUT, redirect_stdout)
