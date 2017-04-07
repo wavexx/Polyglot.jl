@@ -4,7 +4,7 @@ export BondException, BondTerminatedException, BondRemoteException, BondSerializ
 
 ## Imports
 using Base
-import Base: close
+import Base: close, function_name
 
 using Expect
 using JSON
@@ -157,7 +157,7 @@ function importfn(bond::BondProc, name::String)
     (args...)->rcall(bond, name, args...)
 end
 
-function exportfn(bond::BondProc, func::Function, name::String=string(func))
+function exportfn(bond::BondProc, func::Function, name::String=string(function_name(func)))
     _sendstate(bond, "EXPORT", _dumps(bond.proto, name))
     bond.bindings[name] = func
     _repl(bond)
