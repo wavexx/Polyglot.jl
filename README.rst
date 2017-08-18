@@ -28,7 +28,7 @@ to run multiple/remote/mixed Python instances (for example, to mix major Python
 versions or to use PyPy), using PyCall_ is advisable.
 
 .. _multiprocessing: https://julia.readthedocs.org/en/latest/manual/parallel-computing/
-.. _bond module documentation: http://www.thregr.org/~wavexx/software/python-bond/
+.. _bond module documentation: https://www.thregr.org/~wavexx/software/python-bond/
 .. _PyCall: https://github.com/stevengj/PyCall.jl
 
 
@@ -76,9 +76,9 @@ Practical examples
 
 Incomplete section.
 
-Please see http://www.thregr.org/~wavexx/software/python-bond/#practical-examples
+Please see https://www.thregr.org/~wavexx/software/python-bond/#practical-examples
 
-   
+
 API
 ===
 
@@ -291,7 +291,7 @@ Language support
 
 Incomplete section.
 
-Please see http://www.thregr.org/~wavexx/software/python-bond/#language-support
+Please see https://www.thregr.org/~wavexx/software/python-bond/#language-support
 
 
 General/support mailing list
